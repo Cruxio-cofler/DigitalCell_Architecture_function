@@ -1,0 +1,916 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Digital Cell Engine — Metabolic & Learning Simulation</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@300;400;500&family=Fraunces:ital,opsz,wght@0,9..144,300;0,9..144,500;1,9..144,300;1,9..144,500&family=Geist:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg:       #f5f2ec;
+  --bg2:      #ede9e0;
+  --bg3:      #e6e1d5;
+  --surface:  #ffffff;
+  --surface2: #f9f7f3;
+  --border:   rgba(60,50,30,0.1);
+  --border2:  rgba(60,50,30,0.18);
+  --shadow:   0 1px 3px rgba(60,50,30,0.08), 0 4px 16px rgba(60,50,30,0.06);
+
+  --teal:      #0f7d62;
+  --teal-bg:   rgba(15,125,98,0.08);
+  --teal-bd:   rgba(15,125,98,0.22);
+  --amber:     #b06000;
+  --amber-bg:  rgba(176,96,0,0.08);
+  --amber-bd:  rgba(176,96,0,0.22);
+  --coral:     #c0392b;
+  --coral-bg:  rgba(192,57,43,0.08);
+  --coral-bd:  rgba(192,57,43,0.2);
+  --blue:      #1a5fa8;
+  --blue-bg:   rgba(26,95,168,0.08);
+  --blue-bd:   rgba(26,95,168,0.22);
+  --purple:    #5b3fa6;
+  --purple-bg: rgba(91,63,166,0.08);
+  --purple-bd: rgba(91,63,166,0.2);
+  --green:     #1a7a40;
+  --green-bg:  rgba(26,122,64,0.08);
+  --green-bd:  rgba(26,122,64,0.2);
+
+  --text:    #1c1810;
+  --text2:   #5a5040;
+  --text3:   #9a8e78;
+
+  --font-display: 'Fraunces', Georgia, serif;
+  --font-body:    'Geist', system-ui, sans-serif;
+  --font-mono:    'DM Mono', monospace;
+  --r:  8px;
+  --r2: 14px;
+}
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+html { scroll-behavior: smooth; }
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--font-body);
+  font-size: 14px;
+  line-height: 1.6;
+  min-height: 100vh;
+}
+
+/* subtle dot grid */
+body::before {
+  content: '';
+  position: fixed; inset: 0;
+  background-image: radial-gradient(circle, rgba(60,50,30,0.12) 1px, transparent 1px);
+  background-size: 28px 28px;
+  pointer-events: none; z-index: 0; opacity: 0.5;
+}
+
+.container { max-width: 1120px; margin: 0 auto; padding: 0 28px; position: relative; z-index: 1; }
+
+/* ── NAV ── */
+nav {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 18px 0; border-bottom: 1px solid var(--border);
+  margin-bottom: 0;
+}
+.nav-logo {
+  font-family: var(--font-display);
+  font-size: 18px; font-weight: 500; color: var(--text);
+  display: flex; align-items: center; gap: 10px;
+}
+.nav-logo-dot {
+  width: 10px; height: 10px; border-radius: 50%;
+  background: var(--teal); box-shadow: 0 0 0 3px var(--teal-bg);
+}
+.nav-tabs {
+  display: flex; gap: 4px;
+  background: var(--bg2); border-radius: 10px; padding: 4px;
+  border: 1px solid var(--border);
+}
+.tab-btn {
+  padding: 6px 18px; border-radius: 7px; border: none;
+  background: transparent; color: var(--text2);
+  font-family: var(--font-mono); font-size: 11px; font-weight: 400;
+  letter-spacing: 0.04em; cursor: pointer; transition: all 0.18s;
+}
+.tab-btn.active {
+  background: var(--surface); color: var(--text);
+  box-shadow: 0 1px 4px rgba(60,50,30,0.12);
+}
+.tab-btn:hover:not(.active) { color: var(--text); }
+.nav-badge {
+  font-family: var(--font-mono); font-size: 10px;
+  padding: 3px 10px; border-radius: 100px;
+  background: var(--teal-bg); color: var(--teal); border: 1px solid var(--teal-bd);
+}
+
+/* ── HERO ── */
+.hero { padding: 56px 0 40px; }
+.hero-eyebrow {
+  font-family: var(--font-mono); font-size: 10px;
+  letter-spacing: 0.14em; color: var(--text3);
+  text-transform: uppercase; margin-bottom: 16px;
+  display: flex; align-items: center; gap: 10px;
+}
+.hero-eyebrow::after { content: ''; flex: 1; max-width: 60px; height: 1px; background: var(--border2); }
+.hero-title {
+  font-family: var(--font-display);
+  font-size: clamp(38px, 5.5vw, 64px);
+  font-weight: 300; line-height: 1.08;
+  letter-spacing: -0.02em; color: var(--text);
+  margin-bottom: 16px;
+}
+.hero-title em { font-style: italic; color: var(--teal); }
+.hero-desc { font-size: 15px; color: var(--text2); max-width: 580px; line-height: 1.75; margin-bottom: 28px; }
+.hero-tags { display: flex; gap: 8px; flex-wrap: wrap; }
+.htag {
+  display: inline-flex; align-items: center; gap: 6px;
+  padding: 4px 13px; border-radius: 100px;
+  font-family: var(--font-mono); font-size: 10px;
+  border: 1px solid; letter-spacing: 0.04em;
+}
+.ht-teal  { background: var(--teal-bg);   color: var(--teal);   border-color: var(--teal-bd); }
+.ht-amber { background: var(--amber-bg);  color: var(--amber);  border-color: var(--amber-bd); }
+.ht-blue  { background: var(--blue-bg);   color: var(--blue);   border-color: var(--blue-bd); }
+.ht-dot   { width: 5px; height: 5px; border-radius: 50%; background: currentColor; }
+
+/* ── PANELS ── */
+.panel { display: none; }
+.panel.active { display: block; animation: fadeIn 0.3s ease; }
+@keyframes fadeIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+
+/* ── SECTION HEADER ── */
+.sec-hdr {
+  display: flex; align-items: center; gap: 12px;
+  margin: 36px 0 16px;
+}
+.sec-num { font-family: var(--font-mono); font-size: 10px; color: var(--text3); letter-spacing: 0.1em; }
+.sec-title { font-size: 10px; font-weight: 500; color: var(--text2); text-transform: uppercase; letter-spacing: 0.12em; }
+.sec-line { flex: 1; height: 1px; background: var(--border); }
+
+/* ── ENV CONTROLS ── */
+.controls-card {
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: var(--r2); padding: 22px 26px;
+  box-shadow: var(--shadow); margin-bottom: 16px;
+}
+.sliders-row { display: grid; grid-template-columns: repeat(3,1fr); gap: 20px; margin-bottom: 18px; }
+.ctrl-item label {
+  display: flex; justify-content: space-between; align-items: center;
+  font-family: var(--font-mono); font-size: 10px; color: var(--text2);
+  letter-spacing: 0.07em; text-transform: uppercase; margin-bottom: 9px;
+}
+.ctrl-item label span { color: var(--teal); font-weight: 500; font-size: 12px; }
+input[type=range] {
+  -webkit-appearance: none; width: 100%; height: 3px;
+  background: var(--bg3); border-radius: 2px; outline: none; cursor: pointer;
+}
+input[type=range]::-webkit-slider-thumb {
+  -webkit-appearance: none; width: 16px; height: 16px; border-radius: 50%;
+  background: var(--teal); border: 3px solid var(--surface);
+  box-shadow: 0 0 0 2px var(--teal-bd), 0 2px 6px rgba(15,125,98,0.25);
+  cursor: pointer; transition: box-shadow 0.2s;
+}
+input[type=range]::-webkit-slider-thumb:hover {
+  box-shadow: 0 0 0 3px var(--teal-bg), 0 2px 8px rgba(15,125,98,0.35);
+}
+.events-row { display: flex; gap: 7px; flex-wrap: wrap; align-items: center; }
+.ev-lbl { font-family: var(--font-mono); font-size: 10px; color: var(--text3); letter-spacing: 0.08em; margin-right: 2px; }
+.ev-btn {
+  display: inline-flex; align-items: center; gap: 6px;
+  padding: 6px 14px; border-radius: var(--r); cursor: pointer;
+  font-family: var(--font-mono); font-size: 10px; letter-spacing: 0.04em;
+  border: 1px solid var(--border2); background: var(--bg2); color: var(--text2);
+  transition: all 0.15s;
+}
+.ev-btn:hover { background: var(--surface); border-color: var(--border2); color: var(--text); }
+.ev-btn.active { background: var(--coral-bg); border-color: var(--coral-bd); color: var(--coral); }
+.ev-btn-teal { background: var(--teal-bg); border-color: var(--teal-bd); color: var(--teal); }
+.ev-btn-teal:hover { background: rgba(15,125,98,0.14); }
+
+/* ── REACTION EQ ── */
+.reaction-card {
+  background: var(--bg2); border: 1px solid var(--border);
+  border-radius: var(--r2); padding: 20px 26px;
+  display: flex; align-items: center; gap: 0; flex-wrap: wrap;
+  margin-bottom: 20px; position: relative; overflow: hidden;
+}
+.reaction-card::after {
+  content: 'AEROBIC RESPIRATION';
+  position: absolute; top: 10px; right: 18px;
+  font-family: var(--font-mono); font-size: 9px;
+  letter-spacing: 0.14em; color: var(--text3);
+}
+.rxb { display: flex; flex-direction: column; align-items: center; padding: 0 18px; }
+.rxb:first-child { padding-left: 0; }
+.rxb-lbl { font-family: var(--font-mono); font-size: 9px; color: var(--text3); letter-spacing: 0.08em; margin-bottom: 3px; }
+.rxb-val {
+  font-family: var(--font-display); font-size: 34px; font-weight: 300;
+  color: var(--text); line-height: 1; transition: color 0.3s;
+  min-width: 38px; text-align: center;
+}
+.rxb-val.low { color: var(--coral); }
+.rxb-val.hi  { color: var(--teal); }
+.rxb-sep { font-size: 20px; color: var(--text3); padding: 0 4px; margin-top: 14px; }
+.rxb-divider { width: 1px; height: 44px; background: var(--border2); margin: 0 6px; align-self: center; }
+.rxb-cycle {
+  margin-left: auto; display: flex; flex-direction: column;
+  align-items: flex-end; gap: 2px;
+}
+.rxb-cycle-lbl { font-family: var(--font-mono); font-size: 9px; color: var(--text3); letter-spacing: 0.1em; }
+.rxb-cycle-val { font-family: var(--font-mono); font-size: 18px; color: var(--text2); }
+
+/* ── FITNESS BAR ── */
+.fitness-bar-wrap {
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: var(--r); padding: 12px 18px;
+  display: flex; align-items: center; gap: 14px; margin-bottom: 20px;
+}
+.fit-label { font-family: var(--font-mono); font-size: 10px; color: var(--text2); white-space: nowrap; letter-spacing: 0.06em; }
+.fit-track { flex: 1; height: 6px; background: var(--bg3); border-radius: 3px; overflow: hidden; }
+.fit-fill { height: 100%; border-radius: 3px; transition: width 0.6s ease, background 0.4s; }
+.fit-val { font-family: var(--font-mono); font-size: 13px; font-weight: 500; color: var(--text); min-width: 36px; text-align: right; }
+
+/* ── AGENTS GRID ── */
+.agents-grid {
+  display: grid; grid-template-columns: repeat(3,minmax(0,1fr));
+  gap: 12px; margin-bottom: 20px;
+}
+.acard {
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: var(--r2); padding: 15px 17px; cursor: pointer;
+  transition: all 0.2s; position: relative; overflow: hidden;
+  box-shadow: 0 1px 3px rgba(60,50,30,0.05);
+}
+.acard::before {
+  content: ''; position: absolute; top: 0; left: 0; right: 0;
+  height: 3px; background: var(--ac, transparent);
+}
+.acard:hover { border-color: var(--border2); transform: translateY(-1px); box-shadow: 0 4px 12px rgba(60,50,30,0.1); }
+.acard.alert   { border-color: var(--amber-bd); --ac: var(--amber); }
+.acard.crit    { border-color: var(--coral-bd); --ac: var(--coral); }
+.acard.learning{ border-color: var(--blue-bd);  --ac: var(--blue); }
+.ahead { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 11px; }
+.aname-wrap { display: flex; align-items: center; gap: 8px; }
+.adot { width: 7px; height: 7px; border-radius: 50%; flex-shrink: 0; }
+.aname { font-size: 12px; font-weight: 500; color: var(--text); }
+.lbadge {
+  font-family: var(--font-mono); font-size: 9px; letter-spacing: 0.05em;
+  padding: 2px 7px; border-radius: 100px; border: 1px solid; white-space: nowrap;
+}
+.lb-naive   { background: rgba(154,142,120,0.1); color: var(--text3); border-color: rgba(154,142,120,0.25); }
+.lb-learn   { background: var(--blue-bg);   color: var(--blue);   border-color: var(--blue-bd); }
+.lb-trained { background: var(--green-bg);  color: var(--green);  border-color: var(--green-bd); }
+.lb-adapted { background: var(--amber-bg);  color: var(--amber);  border-color: var(--amber-bd); }
+.stat-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 2px; }
+.stat-lbl { font-size: 10px; color: var(--text3); }
+.stat-val { font-family: var(--font-mono); font-size: 11px; font-weight: 500; color: var(--text2); }
+.bar-track { height: 3px; background: var(--bg3); border-radius: 2px; margin-bottom: 6px; overflow: hidden; }
+.bar-fill { height: 100%; border-radius: 2px; transition: width 0.5s ease, background 0.4s; }
+.thr-row {
+  display: flex; justify-content: space-between; align-items: center;
+  margin-top: 10px; padding-top: 9px; border-top: 1px solid var(--border);
+}
+.thr-grp { display: flex; flex-direction: column; gap: 1px; }
+.thr-k { font-size: 9px; color: var(--text3); font-family: var(--font-mono); }
+.thr-n { font-family: var(--font-mono); font-size: 11px; color: var(--text2); }
+.thr-a { font-size: 10px; }
+.thr-down { color: var(--teal); }
+.thr-up   { color: var(--amber); }
+.arule { font-family: var(--font-mono); font-size: 9px; color: var(--text3); margin-top: 7px; line-height: 1.5; }
+
+/* ── MEMORY PANEL ── */
+.mem-panel {
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: var(--r2); padding: 18px 22px; margin-bottom: 20px;
+  box-shadow: var(--shadow);
+}
+.mem-grid { display: grid; grid-template-columns: repeat(6,minmax(0,1fr)); gap: 8px; margin-top: 12px; }
+.mem-cell {
+  background: var(--bg2); border: 1px solid var(--border);
+  border-radius: var(--r); padding: 10px 8px; text-align: center; transition: border-color 0.2s;
+}
+.mem-cell:hover { border-color: var(--border2); }
+.mem-agent { font-size: 9px; color: var(--text3); letter-spacing: 0.05em; margin-bottom: 4px; text-transform: uppercase; font-family: var(--font-mono); }
+.mem-exp   { font-family: var(--font-display); font-size: 22px; font-weight: 300; color: var(--text); line-height: 1; margin-bottom: 3px; }
+.mem-lr    { font-family: var(--font-mono); font-size: 9px; color: var(--text3); margin-bottom: 2px; }
+.mem-eff   { font-family: var(--font-mono); font-size: 10px; font-weight: 500; }
+
+/* ── LOG ── */
+.log-panel {
+  background: var(--bg2); border: 1px solid var(--border);
+  border-radius: var(--r2); padding: 14px 18px; margin-bottom: 28px;
+}
+.log-scroll {
+  max-height: 150px; overflow-y: auto;
+  scrollbar-width: thin; scrollbar-color: var(--bg3) transparent;
+}
+.log-scroll::-webkit-scrollbar { width: 4px; }
+.log-scroll::-webkit-scrollbar-thumb { background: var(--bg3); border-radius: 2px; }
+.log-entry {
+  font-family: var(--font-mono); font-size: 11px; color: var(--text3);
+  line-height: 1.85; padding: 0;
+}
+.log-entry.warn    { color: var(--amber); }
+.log-entry.danger  { color: var(--coral); }
+.log-entry.success { color: var(--teal); }
+.log-entry.info    { color: var(--blue); }
+
+/* ── RULES GRID ── */
+.rules-grid { display: grid; grid-template-columns: repeat(2,1fr); gap: 12px; margin-bottom: 28px; }
+.rule-card {
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: var(--r2); padding: 16px 18px;
+  border-left: 3px solid var(--rac, var(--border));
+  box-shadow: 0 1px 3px rgba(60,50,30,0.05);
+}
+.rule-agent { font-size: 11px; font-weight: 500; color: var(--text); margin-bottom: 6px; display: flex; align-items: center; gap: 8px; }
+.rule-rdot { width: 8px; height: 8px; border-radius: 50%; background: var(--rac); box-shadow: 0 0 0 2px rgba(0,0,0,0.06); }
+.rule-trigger { font-size: 12px; color: var(--text2); margin-bottom: 8px; line-height: 1.55; }
+.rule-out { font-family: var(--font-mono); font-size: 10px; color: var(--text3); line-height: 1.8; }
+.rtag {
+  display: inline-block; padding: 1px 7px; border-radius: 4px;
+  font-size: 9px; font-family: var(--font-mono); border: 1px solid;
+  margin-right: 4px;
+}
+
+/* ── INTERACTION BRIDGE ── */
+.bridge-panel {
+  background: var(--surface); border: 1px solid var(--teal-bd);
+  border-radius: var(--r2); padding: 18px 22px;
+  margin-bottom: 20px; box-shadow: var(--shadow);
+  display: flex; align-items: flex-start; gap: 18px; flex-wrap: wrap;
+}
+.bridge-icon {
+  width: 44px; height: 44px; border-radius: 12px;
+  background: var(--teal-bg); display: flex; align-items: center;
+  justify-content: center; flex-shrink: 0; font-size: 20px;
+}
+.bridge-content h3 { font-size: 13px; font-weight: 500; color: var(--text); margin-bottom: 4px; }
+.bridge-content p  { font-size: 12px; color: var(--text2); line-height: 1.6; }
+.bridge-stats {
+  display: flex; gap: 20px; margin-top: 10px; flex-wrap: wrap;
+}
+.bstat { display: flex; flex-direction: column; gap: 2px; }
+.bstat-lbl { font-family: var(--font-mono); font-size: 9px; color: var(--text3); letter-spacing: 0.06em; }
+.bstat-val { font-family: var(--font-display); font-size: 22px; font-weight: 300; color: var(--text); line-height: 1; }
+.bstat-val span { font-size: 11px; color: var(--text3); font-family: var(--font-mono); margin-left: 2px; }
+
+/* ── FOOTER ── */
+footer {
+  border-top: 1px solid var(--border); padding: 36px 0;
+  display: flex; justify-content: space-between; align-items: center;
+  flex-wrap: wrap; gap: 14px;
+}
+.footer-brand { font-family: var(--font-display); font-size: 18px; font-weight: 300; color: var(--text2); }
+.footer-brand em { font-style: italic; color: var(--teal); }
+.footer-info { font-family: var(--font-mono); font-size: 10px; color: var(--text3); }
+
+/* ── ACTION BTNS ── */
+.action-row { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 28px; }
+.act-btn {
+  display: inline-flex; align-items: center; gap: 6px;
+  padding: 8px 16px; border-radius: var(--r); border: 1px solid var(--border2);
+  background: var(--bg2); color: var(--text2); cursor: pointer;
+  font-family: var(--font-mono); font-size: 10px; letter-spacing: 0.04em;
+  transition: all 0.15s; text-decoration: none;
+}
+.act-btn:hover { background: var(--surface); color: var(--text); border-color: var(--teal-bd); }
+
+/* ── RESPONSIVE ── */
+@media (max-width: 760px) {
+  .agents-grid { grid-template-columns: repeat(2,1fr); }
+  .mem-grid { grid-template-columns: repeat(3,1fr); }
+  .sliders-row { grid-template-columns: 1fr; }
+  .rules-grid { grid-template-columns: 1fr; }
+  .nav-tabs { display: none; }
+}
+@media (max-width: 500px) {
+  .agents-grid { grid-template-columns: 1fr; }
+  .mem-grid { grid-template-columns: repeat(2,1fr); }
+}
+</style>
+</head>
+<body>
+<div class="container">
+
+<!-- NAV -->
+<nav>
+  <div class="nav-logo">
+    <span class="nav-logo-dot"></span>
+    Digital Cell Engine
+  </div>
+  <div class="nav-tabs">
+    <button class="tab-btn active" onclick="switchTab('metabolic', this)">Metabolic engine</button>
+    <button class="tab-btn" onclick="switchTab('learning', this)">Learning layer</button>
+    <button class="tab-btn" onclick="switchTab('rules', this)">Agent rules</button>
+  </div>
+  <span class="nav-badge" id="nav-status">● live</span>
+</nav>
+
+<!-- HERO -->
+<div class="hero">
+  <div class="hero-eyebrow">Computational cell biology</div>
+  <h1 class="hero-title">Agent-based<br><em>cell simulation</em></h1>
+  <p class="hero-desc">Six independent organelle agents — each with adaptive thresholds, reinforcement learning, and real-time metabolic computation. Adjust substrates, fire pathological events, and watch the cell adapt.</p>
+  <div class="hero-tags">
+    <span class="htag ht-teal"><span class="ht-dot"></span>Live simulation</span>
+    <span class="htag ht-amber"><span class="ht-dot"></span>Adaptive learning</span>
+    <span class="htag ht-blue"><span class="ht-dot"></span>6 agents</span>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════ -->
+<!--  PANEL 1 — METABOLIC ENGINE                -->
+<!-- ═══════════════════════════════════════════ -->
+<div class="panel active" id="panel-metabolic">
+
+  <div class="sec-hdr"><span class="sec-num">01</span><span class="sec-title">Environment inputs</span><div class="sec-line"></div></div>
+
+  <div class="controls-card">
+    <div class="sliders-row">
+      <div class="ctrl-item">
+        <label>GLUCOSE <span id="lbl-g">80</span></label>
+        <input type="range" id="sl-g" min="0" max="100" value="80" step="1" oninput="envChange()">
+      </div>
+      <div class="ctrl-item">
+        <label>O₂ SATURATION <span id="lbl-o">75</span></label>
+        <input type="range" id="sl-o" min="0" max="100" value="75" step="1" oninput="envChange()">
+      </div>
+      <div class="ctrl-item">
+        <label>NUTRIENTS <span id="lbl-n">60</span></label>
+        <input type="range" id="sl-n" min="0" max="100" value="60" step="1" oninput="envChange()">
+      </div>
+    </div>
+    <div class="events-row">
+      <span class="ev-lbl">EVENTS //</span>
+      <button class="ev-btn" id="btn-inf"  onclick="toggleEv('infection')">Infection</button>
+      <button class="ev-btn" id="btn-dna"  onclick="toggleEv('dna')">DNA damage</button>
+      <button class="ev-btn" id="btn-tox"  onclick="toggleEv('toxin')">Toxin</button>
+      <button class="ev-btn" id="btn-hyp"  onclick="toggleEv('hypoxia')">Hypoxia</button>
+      <button class="ev-btn ev-btn-teal"   onclick="stressProtocol()">Stress protocol</button>
+      <button class="ev-btn"               onclick="resetAll()">Reset cell</button>
+    </div>
+  </div>
+
+  <div class="reaction-card">
+    <div class="rxb"><span class="rxb-lbl">GLUCOSE</span><span class="rxb-val" id="v-g">80</span></div>
+    <span class="rxb-sep">+</span>
+    <div class="rxb"><span class="rxb-lbl">O₂</span><span class="rxb-val" id="v-o">75</span></div>
+    <span class="rxb-sep">→</span>
+    <div class="rxb"><span class="rxb-lbl">ATP YIELD</span><span class="rxb-val" id="v-atp">36</span></div>
+    <span class="rxb-sep">+</span>
+    <div class="rxb"><span class="rxb-lbl">CO₂</span><span class="rxb-val" id="v-co2">6</span></div>
+    <span class="rxb-sep">+</span>
+    <div class="rxb"><span class="rxb-lbl">FITNESS</span><span class="rxb-val" id="v-fit">—</span></div>
+    <div class="rxb-cycle">
+      <span class="rxb-cycle-lbl">CYCLE</span>
+      <span class="rxb-cycle-val" id="v-tick">000</span>
+    </div>
+  </div>
+
+  <div class="fitness-bar-wrap">
+    <span class="fit-label">CELL FITNESS</span>
+    <div class="fit-track"><div class="fit-fill" id="fit-bar" style="width:60%;background:var(--teal)"></div></div>
+    <span class="fit-val" id="fit-pct">60%</span>
+  </div>
+
+  <div class="sec-hdr"><span class="sec-num">02</span><span class="sec-title">Organelle agents</span><div class="sec-line"></div></div>
+  <div class="agents-grid" id="agents-grid-m"></div>
+
+  <div class="sec-hdr"><span class="sec-num">03</span><span class="sec-title">Agent log</span><div class="sec-line"></div></div>
+  <div class="log-panel"><div class="log-scroll" id="log-m"></div></div>
+
+  <div class="action-row">
+    <button class="act-btn" onclick="switchTab('learning', document.querySelectorAll('.tab-btn')[1])">View learning layer →</button>
+    <button class="act-btn" onclick="switchTab('rules', document.querySelectorAll('.tab-btn')[2])">Agent rule reference →</button>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════ -->
+<!--  PANEL 2 — LEARNING LAYER                  -->
+<!-- ═══════════════════════════════════════════ -->
+<div class="panel" id="panel-learning">
+
+  <!-- BRIDGE: shows live sync from metabolic engine -->
+  <div class="sec-hdr" style="margin-top:24px"><span class="sec-num">01</span><span class="sec-title">Live sync from metabolic engine</span><div class="sec-line"></div></div>
+  <div class="bridge-panel">
+    <div class="bridge-icon">⟳</div>
+    <div class="bridge-content">
+      <h3>Shared agent state</h3>
+      <p>The learning layer reads live agent values from the metabolic engine. Events and substrate changes made in the Metabolic tab cascade here in real time — thresholds adapt in response to the same stimuli.</p>
+      <div class="bridge-stats">
+        <div class="bstat"><span class="bstat-lbl">TOTAL EXP</span><span class="bstat-val" id="b-exp">0<span>pts</span></span></div>
+        <div class="bstat"><span class="bstat-lbl">AVG FITNESS</span><span class="bstat-val" id="b-fit">—<span>%</span></span></div>
+        <div class="bstat"><span class="bstat-lbl">TRAINED AGENTS</span><span class="bstat-val" id="b-trained">0<span>/6</span></span></div>
+        <div class="bstat"><span class="bstat-lbl">ADAPTED</span><span class="bstat-val" id="b-adapted">0<span>/6</span></span></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="sec-hdr"><span class="sec-num">02</span><span class="sec-title">Agents — adaptive thresholds</span><div class="sec-line"></div></div>
+  <div class="agents-grid" id="agents-grid-l"></div>
+
+  <div class="sec-hdr"><span class="sec-num">03</span><span class="sec-title">Memory bank</span><div class="sec-line"></div></div>
+  <div class="mem-panel">
+    <p style="font-size:12px;color:var(--text2)">Experience · learning rate decay · response efficiency (last 20 cycles)</p>
+    <div class="mem-grid" id="mem-grid"></div>
+  </div>
+
+  <div class="sec-hdr"><span class="sec-num">04</span><span class="sec-title">Learning log</span><div class="sec-line"></div></div>
+  <div class="log-panel"><div class="log-scroll" id="log-l"></div></div>
+
+  <div class="action-row">
+    <button class="act-btn" onclick="switchTab('metabolic', document.querySelectorAll('.tab-btn')[0])">← Back to metabolic engine</button>
+    <button class="act-btn" onclick="stressProtocol()">Run stress protocol ↗</button>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════ -->
+<!--  PANEL 3 — AGENT RULES                     -->
+<!-- ═══════════════════════════════════════════ -->
+<div class="panel" id="panel-rules">
+  <div class="sec-hdr" style="margin-top:24px"><span class="sec-num">01</span><span class="sec-title">Agent rule reference</span><div class="sec-line"></div></div>
+  <div class="rules-grid" id="rules-grid"></div>
+
+  <div class="sec-hdr"><span class="sec-num">02</span><span class="sec-title">Current live state</span><div class="sec-line"></div></div>
+  <div class="agents-grid" id="agents-grid-r"></div>
+
+  <div class="action-row">
+    <button class="act-btn" onclick="switchTab('metabolic', document.querySelectorAll('.tab-btn')[0])">← Back to simulation</button>
+  </div>
+</div>
+
+<!-- FOOTER -->
+<footer>
+  <div class="footer-brand">Digital <em>Cell</em> Engine</div>
+  <div class="footer-info">Agent-based · Reactive · Adaptive · Open source</div>
+</footer>
+
+</div><!-- /container -->
+
+<script>
+// ── AGENT DEFINITIONS ────────────────────────────────────────────────
+const AGENT_DEFS = [
+  {id:'membrane',    name:'Membrane',         color:'#0f7d62', tKey:'receptorThreshold',
+   stats:['receptors','permeability','signal'],    labels:['Receptors','Permeability','Signal'],
+   trigger:'Repeated stress / PRR activation raises receptor load beyond threshold',
+   output:'signal_strength → nucleus + signaling agents',
+   formula:'receptors = 60 + stress×20 + primed×15',
+   rule:'IF repeated_stress → sensitise threshold'},
+  {id:'nucleus',     name:'Nucleus',           color:'#5b3fa6', tKey:'stressThreshold',
+   stats:['geneActivity','repairLevel','transcription'], labels:['Gene activity','Repair','Transcription'],
+   trigger:'DNA damage fires p53; infection fires NF-κB nuclear translocation',
+   output:'repairLevel, transcriptionRate → ribosome mRNA load',
+   formula:'repairLevel = max(90, 120 − stressThreshold) when dna_damage',
+   rule:'IF dna_damage → activate p53 repair pathway'},
+  {id:'mitochondria',name:'Mitochondria',      color:'#b06000', tKey:'atpThreshold',
+   stats:['atp','respiration','efficiency'],   labels:['ATP','Respiration','Efficiency'],
+   trigger:'ATP drops below adaptive threshold; hypoxia triggers Pasteur effect',
+   output:'ATP level (master energy signal) → all downstream agents',
+   formula:'ATP = (glucose × O₂ / 100) × 0.46 + 4 + efficiency_bonus',
+   rule:'IF ATP < threshold → emergency glycolysis + Pasteur effect'},
+  {id:'ribosome',    name:'Protein synthesis', color:'#993c1d', tKey:'nutrientThreshold',
+   stats:['proteinRate','mrnaLoad','output'],  labels:['Synthesis','mRNA load','Output'],
+   trigger:'mTORC1 senses amino acid sufficiency via Rag GTPases; nutrient > threshold',
+   output:'protein_output (anabolic capacity, repair material)',
+   formula:'protein_rate = nutrients × 0.72 + primed×10',
+   rule:'IF nutrients > threshold → mTORC1 → S6K1/4E-BP1 phosphorylation'},
+  {id:'lysosome',    name:'Waste management',  color:'#1a7a40', tKey:'wasteThreshold',
+   stats:['waste','autophagy','cleared'],      labels:['Waste','Autophagy','Cleared'],
+   trigger:'Waste / toxin load exceeds threshold; TFEB nuclear translocation',
+   output:'autophagy_rate + toxin_cleared (inversely proportional to waste)',
+   formula:'autophagy = 90 + primed×8 when waste > wasteThreshold',
+   rule:'IF waste > threshold → ULK1 autophagy + TFEB activation'},
+  {id:'signaling',   name:'Signaling',         color:'#1a5fa8', tKey:'signalThreshold',
+   stats:['cytokines','camp','response'],      labels:['Cytokines','cAMP','Response'],
+   trigger:'PRR → MyD88 → IRAK/TRAF6 → NF-κB → cytokine cascade on infection',
+   output:'cytokines (paracrine tissue signal) + cAMP second messenger',
+   formula:'cytokines = 85 + primed×12 when infection active',
+   rule:'IF infection > threshold → NF-κB → TNF-α / IL-6 / IL-1β'},
+];
+
+const RULE_COLORS = {
+  membrane:'#0f7d62', nucleus:'#5b3fa6', mitochondria:'#b06000',
+  ribosome:'#993c1d', lysosome:'#1a7a40', signaling:'#1a5fa8'
+};
+
+// ── SHARED STATE ─────────────────────────────────────────────────────
+const events = {infection:false, dna:false, toxin:false, hypoxia:false};
+const agents = {};
+let tick = 0, logs = [], stressProto = null;
+
+AGENT_DEFS.forEach(def => {
+  agents[def.id] = {
+    receptors:70, permeability:50, signal:60,
+    geneActivity:50, repairLevel:30, transcription:55,
+    atp:36, respiration:60, efficiency:75,
+    proteinRate:42, mrnaLoad:55, output:36,
+    waste:20, autophagy:30, cleared:80,
+    cytokines:10, camp:45, response:20,
+    experience:0, learningRate:0.08,
+    receptorThreshold:50, stressThreshold:40, atpThreshold:30,
+    nutrientThreshold:40, wasteThreshold:60, signalThreshold:50,
+    efficiency_bonus:0, primed:false, tolerant:false,
+    fitnessHistory:[], rewardAccum:0,
+  };
+});
+
+// ── HELPERS ──────────────────────────────────────────────────────────
+function env(){ return { g:+document.getElementById('sl-g').value, o:+document.getElementById('sl-o').value, n:+document.getElementById('sl-n').value }; }
+function clamp(v,a,b){ return Math.min(b,Math.max(a,Math.round(v))); }
+function barColor(v){ return v<30?'var(--coral)':v<55?'var(--amber)':'var(--teal)'; }
+
+function learnState(ag){
+  const eff = ag.fitnessHistory.length>0 ? Math.round(ag.fitnessHistory.reduce((a,b)=>a+b,0)/ag.fitnessHistory.length*100) : 0;
+  if(ag.experience<10) return {label:'naive',  cls:'lb-naive'};
+  if(ag.tolerant)      return {label:'adapted', cls:'lb-adapted'};
+  if(ag.primed&&eff>60) return {label:'trained', cls:'lb-trained'};
+  return {label:'learning', cls:'lb-learn'};
+}
+
+function fitness(){
+  const m=agents.mitochondria, l=agents.lysosome;
+  return clamp((m.atp + l.cleared*0.5 + (100-l.waste)*0.3 + m.efficiency*0.3)/2.1, 0, 100);
+}
+
+// ── AGENT LOGIC ───────────────────────────────────────────────────────
+function runAgents(){
+  const {g,o,n}=env(); const hyp=events.hypoxia||o<25;
+
+  const mem=agents.membrane;
+  const sl=(events.infection?1:0)+(events.toxin?1:0)+(hyp?1:0);
+  const rawSig=60+sl*20;
+  mem.receptors=clamp(rawSig+(mem.primed?15:0),0,100);
+  mem.permeability=clamp(55-(events.toxin?25:0)+(n>60?8:0),10,95);
+  mem.signal=clamp(mem.receptors*0.88+(mem.primed?8:0),0,100);
+  learn(mem,'receptorThreshold',rawSig>mem.receptorThreshold,mem.signal>60?1:-0.5,2,70,'membrane');
+
+  const nuc=agents.nucleus;
+  nuc.repairLevel=clamp(events.dna?Math.max(90,120-nuc.stressThreshold):(nuc.primed?45:20),0,100);
+  nuc.geneActivity=clamp(50+(events.dna?30:0)+(events.infection?20:0)+(nuc.primed?10:0),0,100);
+  nuc.transcription=clamp(38+Math.round(n/4.5)+(events.dna?20:0)+(nuc.primed?8:0),0,100);
+  learn(nuc,'stressThreshold',events.dna,events.dna?(nuc.repairLevel>80?1:-1):0.2,5,20,'nucleus');
+
+  const mit=agents.mitochondria;
+  const baseATP=Math.round((g*(hyp?o*0.3:o))/100*0.46+4+mit.efficiency_bonus);
+  mit.atp=clamp(baseATP,0,100);
+  mit.respiration=clamp((hyp?o*0.3:o)*0.85+(mit.atp<mit.atpThreshold?18:0),0,100);
+  mit.efficiency=clamp(75+mit.efficiency_bonus+(g>10&&o>10?10:0)-(hyp?20:0),0,100);
+  const rMit=mit.atp>mit.atpThreshold?1:-1;
+  learn(mit,'atpThreshold',mit.atp<mit.atpThreshold,rMit,1,50,'mitochondria');
+  if(rMit===1&&mit.experience>5) mit.efficiency_bonus=Math.min(mit.efficiency_bonus+0.3,15);
+
+  const rib=agents.ribosome;
+  rib.proteinRate=clamp(n*0.72+(rib.primed?10:0),0,100);
+  rib.mrnaLoad=clamp(40+Math.round(n/4)+(nuc.transcription>70?15:0)+(rib.primed?8:0),0,100);
+  rib.output=clamp(rib.proteinRate*0.87,0,100);
+  learn(rib,'nutrientThreshold',n<rib.nutrientThreshold,rib.output>40?1:-0.5,2,60,'ribosome');
+
+  const lys=agents.lysosome;
+  lys.waste=clamp(20+(events.toxin?55:0)+(hyp?15:0),0,100);
+  lys.autophagy=clamp(lys.waste>lys.wasteThreshold?90+(lys.primed?8:0):(lys.primed?45:30),0,100);
+  lys.cleared=clamp(events.toxin?Math.max(15,100-lys.waste+(lys.primed?15:0)):82,0,100);
+  learn(lys,'wasteThreshold',lys.waste>lys.wasteThreshold,lys.cleared>60?1:-0.8,5,80,'lysosome');
+
+  const sig=agents.signaling;
+  sig.cytokines=clamp(events.infection?85+(sig.primed?12:0):(sig.tolerant?5:10),0,100);
+  sig.camp=clamp(40+(events.infection?30:0)+(events.dna?15:0)+(sig.primed?12:0),0,100);
+  sig.response=clamp(events.infection?80+(sig.primed?15:0):(events.toxin?50:15),0,100);
+  learn(sig,'signalThreshold',events.infection,events.infection?(sig.response>80?1:-0.5):0.1,5,80,'signaling');
+}
+
+function learn(ag,tKey,cond,reward,expGain,tMin,name){
+  ag.experience=Math.min(ag.experience+expGain,999);
+  ag.rewardAccum+=reward;
+  const lr=ag.learningRate;
+  if(cond&&reward>0){
+    const old=ag[tKey];
+    ag[tKey]=Math.max(tMin,ag[tKey]-lr*8);
+    ag.primed=true;
+    if(Math.abs(old-ag[tKey])>1&&tick%4===0) addLog(`${name}: threshold ↓ ${old.toFixed(1)} → ${ag[tKey].toFixed(1)} (sensitised)`,'info');
+  } else if(!cond&&reward<0){
+    const old=ag[tKey];
+    ag[tKey]=Math.min(tMin+40,ag[tKey]+lr*4);
+    ag.primed=false;
+    if(ag.experience>20){ ag.tolerant=true; if(tick%8===0) addLog(`${name}: tolerance — threshold ↑ ${old.toFixed(1)} → ${ag[tKey].toFixed(1)}`,'warn'); }
+  }
+  ag.learningRate=Math.max(0.01,lr*0.9998);
+  ag.fitnessHistory.push(reward>0?1:0);
+  if(ag.fitnessHistory.length>20) ag.fitnessHistory.shift();
+}
+
+// ── RENDER ────────────────────────────────────────────────────────────
+function agentCardHTML(def, showThr){
+  const ag=agents[def.id];
+  const vals=def.stats.map(s=>ag[s]);
+  const avg=Math.round(vals.reduce((a,b)=>a+b,0)/3);
+  const cardCls=ag.primed?'learning':(avg<30?'crit':avg<50?'alert':'');
+  const ls=learnState(ag);
+  const tVal=ag[def.tKey]!==undefined?ag[def.tKey].toFixed(1):'—';
+  const tArrow=ag.primed
+    ?'<span class="thr-a thr-down">▼ sensitised</span>'
+    :(ag.tolerant?'<span class="thr-a thr-up">▲ tolerant</span>':'<span style="font-size:10px;color:var(--text3)">stable</span>');
+  return `<div class="acard ${cardCls}" style="--ac:${def.color}">
+    <div class="ahead">
+      <div class="aname-wrap">
+        <span class="adot" style="background:${def.color};box-shadow:0 0 0 2px ${def.color}22"></span>
+        <span class="aname">${def.name}</span>
+      </div>
+      <span class="lbadge ${ls.cls}">${ls.label}</span>
+    </div>
+    ${def.stats.map((s,i)=>`
+      <div class="stat-row"><span class="stat-lbl">${def.labels[i]}</span><span class="stat-val">${Math.round(ag[s])}</span></div>
+      <div class="bar-track"><div class="bar-fill" style="width:${Math.round(ag[s])}%;background:${barColor(ag[s])}"></div></div>
+    `).join('')}
+    ${showThr ? `<div class="thr-row">
+      <div class="thr-grp"><span class="thr-k">THRESHOLD</span><span class="thr-n">${tVal}</span></div>
+      ${tArrow}
+      <div class="thr-grp" style="align-items:flex-end"><span class="thr-k">EXP</span><span class="thr-n">${ag.experience}</span></div>
+    </div>` : ''}
+    <div class="arule">${def.rule}</div>
+  </div>`;
+}
+
+function renderAgentsAll(){
+  const gm=document.getElementById('agents-grid-m');
+  const gl=document.getElementById('agents-grid-l');
+  const gr=document.getElementById('agents-grid-r');
+  const html_m = AGENT_DEFS.map(d=>agentCardHTML(d,false)).join('');
+  const html_l = AGENT_DEFS.map(d=>agentCardHTML(d,true)).join('');
+  if(gm) gm.innerHTML=html_m;
+  if(gl) gl.innerHTML=html_l;
+  if(gr) gr.innerHTML=html_m;
+}
+
+function renderMemory(){
+  const grid=document.getElementById('mem-grid');
+  if(!grid) return;
+  grid.innerHTML='';
+  AGENT_DEFS.forEach(def=>{
+    const ag=agents[def.id];
+    const eff=ag.fitnessHistory.length>0?Math.round(ag.fitnessHistory.reduce((a,b)=>a+b,0)/ag.fitnessHistory.length*100):0;
+    const ec=eff>60?'var(--teal)':eff>35?'var(--amber)':'var(--coral)';
+    grid.innerHTML+=`<div class="mem-cell">
+      <div class="mem-agent">${def.name.split(' ')[0]}</div>
+      <div class="mem-exp">${ag.experience}</div>
+      <div class="mem-lr">LR ${ag.learningRate.toFixed(3)}</div>
+      <div class="mem-eff" style="color:${ec}">${eff}%</div>
+    </div>`;
+  });
+}
+
+function renderReaction(){
+  const {g,o}=env(); const m=agents.mitochondria; const f=fitness();
+  const co2=clamp(g*o/100*0.06+1,0,20);
+  rv('v-g',g,g<20?'low':g>70?'hi':'');
+  rv('v-o',o,o<20?'low':o>70?'hi':'');
+  rv('v-atp',m.atp,m.atp<20?'low':m.atp>60?'hi':'');
+  rv('v-co2',co2,'');
+  rv('v-fit',f,f<30?'low':f>65?'hi':'');
+  document.getElementById('v-tick').textContent=String(tick).padStart(3,'0');
+  const fb=document.getElementById('fit-bar');
+  const fp=document.getElementById('fit-pct');
+  if(fb){ fb.style.width=f+'%'; fb.style.background=f<30?'var(--coral)':f<55?'var(--amber)':'var(--teal)'; }
+  if(fp) fp.textContent=f+'%';
+}
+
+function rv(id,val,cls){
+  const el=document.getElementById(id);
+  if(!el) return;
+  el.textContent=val;
+  el.className='rxb-val'+(cls?' '+cls:'');
+}
+
+function renderBridge(){
+  const totalExp=AGENT_DEFS.reduce((s,d)=>s+agents[d.id].experience,0);
+  const f=fitness();
+  const trained=AGENT_DEFS.filter(d=>{ const ag=agents[d.id]; const ls=learnState(ag); return ls.label==='trained'; }).length;
+  const adapted=AGENT_DEFS.filter(d=>agents[d.id].tolerant).length;
+  const be=document.getElementById('b-exp'); if(be) be.innerHTML=totalExp+'<span>pts</span>';
+  const bf=document.getElementById('b-fit'); if(bf) bf.innerHTML=f+'<span>%</span>';
+  const bt=document.getElementById('b-trained'); if(bt) bt.innerHTML=trained+'<span>/6</span>';
+  const ba=document.getElementById('b-adapted'); if(ba) ba.innerHTML=adapted+'<span>/6</span>';
+}
+
+function renderRulesGrid(){
+  const grid=document.getElementById('rules-grid');
+  if(!grid||grid.children.length>0) return;
+  grid.innerHTML=AGENT_DEFS.map(def=>`
+    <div class="rule-card" style="--rac:${def.color}">
+      <div class="rule-agent">
+        <span class="rule-rdot"></span>${def.name} agent
+      </div>
+      <div class="rule-trigger">${def.trigger}</div>
+      <div class="rule-out">
+        <span class="rtag" style="background:${def.color}15;color:${def.color};border-color:${def.color}30">TRIGGER</span>${def.formula}<br>
+        <span class="rtag" style="background:rgba(90,80,64,0.08);color:var(--text3);border-color:var(--border2)">OUTPUT</span>${def.output}
+      </div>
+    </div>`).join('');
+}
+
+// ── LOG ───────────────────────────────────────────────────────────────
+function addLog(msg,type=''){
+  logs.unshift({m:`[${String(tick).padStart(4,'0')}] ${msg}`,t:type});
+  if(logs.length>60) logs.pop();
+  const html=logs.map(l=>`<div class="log-entry ${l.t}">${l.m}</div>`).join('');
+  const lm=document.getElementById('log-m'); if(lm) lm.innerHTML=html;
+  const ll=document.getElementById('log-l'); if(ll) ll.innerHTML=html;
+}
+
+function periodicLog(){
+  const m=agents.mitochondria, s=agents.signaling;
+  if(m.atp<20) addLog('Mitochondria: ATP critical — emergency glycolysis active','danger');
+  if(m.efficiency_bonus>8) addLog(`Mitochondria: efficiency bonus +${m.efficiency_bonus.toFixed(1)} — aerobic training effect`,'success');
+  if(s.primed&&events.infection) addLog('Signaling: primed recall — cytokine surge accelerated','success');
+  AGENT_DEFS.forEach(def=>{
+    const ag=agents[def.id];
+    if(ag.experience===50) addLog(`${def.name}: 50 exp — entering trained state`,'info');
+    if(ag.experience===100) addLog(`${def.name}: 100 exp — LR decay to ${ag.learningRate.toFixed(3)}`,'info');
+  });
+}
+
+// ── MAIN UPDATE ───────────────────────────────────────────────────────
+function update(){
+  runAgents(); renderAgentsAll(); renderMemory(); renderReaction(); renderBridge();
+  if(tick%5===0) periodicLog();
+  tick++;
+  document.getElementById('nav-status').textContent='● cycle '+String(tick).padStart(3,'0');
+}
+
+// ── CONTROLS ──────────────────────────────────────────────────────────
+function envChange(){
+  document.getElementById('lbl-g').textContent=document.getElementById('sl-g').value;
+  document.getElementById('lbl-o').textContent=document.getElementById('sl-o').value;
+  document.getElementById('lbl-n').textContent=document.getElementById('sl-n').value;
+  update();
+}
+
+function toggleEv(ev){
+  events[ev]=!events[ev];
+  const ids={infection:'btn-inf',dna:'btn-dna',toxin:'btn-tox',hypoxia:'btn-hyp'};
+  const btn=document.getElementById(ids[ev]);
+  if(btn) btn.classList.toggle('active',events[ev]);
+  addLog(`Event: ${ev} ${events[ev]?'ACTIVE':'cleared'}`,events[ev]?'danger':'success');
+  update();
+}
+
+let protoStep=0;
+function stressProtocol(){
+  if(stressProto){clearInterval(stressProto);stressProto=null;}
+  protoStep=0;
+  addLog('Stress protocol initiated — 8-cycle adaptive training','info');
+  const steps=[
+    ()=>{events.infection=true; document.getElementById('btn-inf').classList.add('active'); addLog('Protocol [1/8]: infection ON','warn');},
+    ()=>{events.infection=false; document.getElementById('btn-inf').classList.remove('active'); addLog('Protocol [2/8]: infection cleared','success');},
+    ()=>{events.hypoxia=true; document.getElementById('btn-hyp').classList.add('active'); document.getElementById('sl-o').value=20; envChange(); addLog('Protocol [3/8]: hypoxia ON','warn');},
+    ()=>{events.hypoxia=false; document.getElementById('btn-hyp').classList.remove('active'); document.getElementById('sl-o').value=75; envChange(); addLog('Protocol [4/8]: O₂ restored','success');},
+    ()=>{events.dna=true; document.getElementById('btn-dna').classList.add('active'); addLog('Protocol [5/8]: DNA damage ON','danger');},
+    ()=>{events.dna=false; document.getElementById('btn-dna').classList.remove('active'); addLog('Protocol [6/8]: repair complete','success');},
+    ()=>{events.toxin=true; document.getElementById('btn-tox').classList.add('active'); addLog('Protocol [7/8]: toxin ON','warn');},
+    ()=>{events.toxin=false; document.getElementById('btn-tox').classList.remove('active'); addLog('Protocol [8/8]: cleared — protocol done','success');},
+  ];
+  stressProto=setInterval(()=>{
+    if(protoStep<steps.length){steps[protoStep]();protoStep++;update();}
+    else{clearInterval(stressProto);stressProto=null;addLog('Protocol complete — inspect thresholds for adaptation','info');}
+  },1800);
+}
+
+function resetAll(){
+  if(stressProto){clearInterval(stressProto);stressProto=null;}
+  Object.keys(events).forEach(k=>{events[k]=false;});
+  ['btn-inf','btn-dna','btn-tox','btn-hyp'].forEach(id=>{const b=document.getElementById(id);if(b)b.classList.remove('active');});
+  document.getElementById('sl-g').value=80;
+  document.getElementById('sl-o').value=75;
+  document.getElementById('sl-n').value=60;
+  AGENT_DEFS.forEach(def=>{
+    const ag=agents[def.id];
+    Object.assign(ag,{experience:0,learningRate:0.08,primed:false,tolerant:false,
+      fitnessHistory:[],rewardAccum:0,efficiency_bonus:0,
+      receptorThreshold:50,stressThreshold:40,atpThreshold:30,
+      nutrientThreshold:40,wasteThreshold:60,signalThreshold:50});
+  });
+  tick=0; logs=[];
+  ['log-m','log-l'].forEach(id=>{const el=document.getElementById(id);if(el)el.innerHTML='';});
+  envChange();
+  addLog('Cell reset — all memory cleared','success');
+}
+
+// ── TAB SWITCHING ────────────────────────────────────────────────────
+function switchTab(name, btn){
+  document.querySelectorAll('.panel').forEach(p=>p.classList.remove('active'));
+  document.getElementById('panel-'+name).classList.add('active');
+  document.querySelectorAll('.tab-btn').forEach(b=>b.classList.remove('active'));
+  btn.classList.add('active');
+  if(name==='rules') renderRulesGrid();
+}
+
+// ── BOOT ─────────────────────────────────────────────────────────────
+renderRulesGrid();
+update();
+setInterval(update, 2000);
+</script>
+</body>
+</html>
